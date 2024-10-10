@@ -5,14 +5,14 @@ namespace Sensors {
         is_setup: boolean
         addr: number
         blackLimit: number
-        hystereze: number
+        hysteresis: number
         offset: number
 
         constructor(addr: number) {
             this.is_setup = false
             this.addr = addr
             this.blackLimit = 1000
-            this.hystereze = 20
+            this.hysteresis = 16
             this.offset = 1.1
         }
 
@@ -27,6 +27,12 @@ namespace Sensors {
             this.setup()
             time = Math.clamp(0, 255, time * 10 / 24)
             smbus.writeByte(this.addr, 0x81, 255 - time)
+        }
+
+        setParameters(limit: number, hysteresis: number, offset: number) {
+            this.blackLimit = limit
+            this.hysteresis = hysteresis
+            this.offset = offset
         }
 
         light(): number {
@@ -54,7 +60,7 @@ namespace Sensors {
             let avr = (rgb[0] + rgb[1] + rgb[2]) / 3 * this.offset
             let i = this.light()
             let x = 0
-            if (dif < this.hystereze) {
+            if (dif < this.hysteresis) {
                 x = (i < this.blackLimit ? 0 : 7)
             } else {
                 x = (rgb[0] > avr ? 1 : 0) + (rgb[1] > avr ? 2 : 0) + (rgb[2] > avr ? 4 : 0)
@@ -113,6 +119,19 @@ namespace Sensors {
     //% subcategory="Color"
     export function getColor(): number {
         return _tcs3472.color()
+    }
+
+    /**
+     * Set the color sensor parameters
+     */
+    //% blockId=envirobit_set_parameters
+    //% block="Set parameters %limit %hysteresis %offset"
+    //% limit.min=500 limit.max=3000 value.defl=1000
+    //% hysteresis.min=0 hysteresis.max=100 value.defl=15
+    //% offset.min=1 offest.max=1.3 value.defl=1.1
+    //% subcategory="Color"
+    export function setParameters(limit: number, hysteresis: number, offset: number): void {
+        return _tcs3472.setParameters(limit, hysteresis, offset)
     }
 
     /**

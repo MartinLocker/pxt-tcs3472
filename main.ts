@@ -12,7 +12,7 @@ namespace Sensors {
             this.is_setup = false
             this.addr = addr
             this.blackLimit = 1000
-            this.hysteresis = 16
+            this.hysteresis = 25
             this.offset = 1.1
         }
 
@@ -126,9 +126,9 @@ namespace Sensors {
      */
     //% blockId=envirobit_set_parameters
     //% block="Set parameters %limit %hysteresis %offset"
-    //% limit.min=500 limit.max=3000 value.defl=1000
-    //% hysteresis.min=0 hysteresis.max=100 value.defl=15
-    //% offset.min=1 offest.max=1.3 value.defl=1.1
+    //% limit.min=500 limit.max=3000 limit.defl=1000
+    //% hysteresis.min=0 hysteresis.max=100 hysteresis.defl=25
+    //% offset.min=1 offset.max=1.3 offset.defl=1.1
     //% subcategory="Color"
     export function setParameters(limit: number, hysteresis: number, offset: number): void {
         return _tcs3472.setParameters(limit, hysteresis, offset)

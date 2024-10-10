@@ -57,7 +57,7 @@ namespace Sensors {
             if (dif < this.hystereze) {
                 x = (i < this.blackLimit ? 0 : 7)
             } else {
-                x = (rgb[0] > avr ? 0 : 1) + (rgb[1] > avr ? 0 : 2) + (rgb[2] > avr ? 0 : 4)
+                x = (rgb[0] > avr ? 1 : 0) + (rgb[1] > avr ? 2 : 0) + (rgb[2] > avr ? 4 : 0)
             }
             return x
         }

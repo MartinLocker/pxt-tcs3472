@@ -1,15 +1,19 @@
-//% weight=100 color=#000000 icon="\uf043" block="Color sensor"
-namespace ColorSensor {
+//% weight=100 color=#000000 icon="\uf043" block="Sensors"
+namespace Sensors {
 
     class tcs3472 {
         is_setup: boolean
         addr: number
-        leds: DigitalPin
+        blackLimit: number
+        hystereze: number
+        offset: number
 
-        constructor(addr: number, leds: DigitalPin = DigitalPin.P8) {
+        constructor(addr: number) {
             this.is_setup = false
             this.addr = addr
-            this.leds = leds
+            this.blackLimit = 1000
+            this.hystereze = 20
+            this.offset = 1.1
         }
 
         setup(): void {
@@ -23,10 +27,6 @@ namespace ColorSensor {
             this.setup()
             time = Math.clamp(0, 255, time * 10 / 24)
             smbus.writeByte(this.addr, 0x81, 255 - time)
-        }
-
-        setLEDs(state: number): void {
-            pins.digitalWritePin(this.leds, state)
         }
 
         light(): number {
@@ -47,30 +47,30 @@ namespace ColorSensor {
             let result: Buffer = smbus.readBuffer(this.addr, 0xb4, pins.sizeOf(NumberFormat.UInt16LE) * 4)
             return smbus.unpack("HHHH", result)
         }
+
+        color(): number {
+            let rgb = this.rgb()
+            let dif = Math.max(rgb[0], Math.max(rgb[1], rgb[2])) - Math.min(rgb[0], Math.min(rgb[1], rgb[2]))
+            let avr = (rgb[0] + rgb[1] + rgb[2]) / 3 * this.offset
+            let i = this.light()
+            let x = 0
+            if (dif < this.hystereze) {
+                x = (i < this.blackLimit ? 0 : 7)
+            } else {
+                x = (rgb[0] > avr ? 0 : 1) + (rgb[1] > avr ? 0 : 2) + (rgb[2] > avr ? 0 : 4)
+            }
+            return x
+        }
     }
 
-    let _tcs3472: tcs3472 = new tcs3472(0x29, DigitalPin.P8)
-
-    //%
-    export enum OnOff {
-        Off = 0,
-        On = 1
-    }
-
-    /**
-     * Set the colour sensor LEDs
-     */
-    //% blockId=envirobit_set_leds
-    //% block="Set LEDs to %state"
-    export function setLEDs(state: OnOff): void {
-        _tcs3472.setLEDs(state)
-    }
+    let _tcs3472: tcs3472 = new tcs3472(0x29)
 
     /**
      * Get the light level
      */
     //% blockId=envirobit_get_light_clear
     //% block="Get light"
+    //% subcategory="Color"
     export function getLight(): number {
         return Math.round(_tcs3472.light())
     }
@@ -80,6 +80,7 @@ namespace ColorSensor {
      */
     //% blockId=envirobit_get_light_red
     //% block="Get red"
+    //% subcategory="Color"
     export function getRed(): number {
         return Math.round(_tcs3472.rgb()[0])
     }
@@ -89,8 +90,29 @@ namespace ColorSensor {
      */
     //% blockId=envirobit_get_light_green
     //% block="Get green"
+    //% subcategory="Color"
     export function getGreen(): number {
         return Math.round(_tcs3472.rgb()[1])
+    }
+
+    /**
+     * Get the amount of blue the colour sensor sees
+     */
+    //% blockId=envirobit_get_light_blue
+    //% block="Get blue"
+    //% subcategory="Color"
+    export function getBlue(): number {
+        return Math.round(_tcs3472.rgb()[2])
+    }
+
+    /**
+     * Get the amount of blue the colour sensor sees
+     */
+    //% blockId=envirobit_get_color
+    //% block="Get color"
+    //% subcategory="Color"
+    export function getColor(): number {
+        return _tcs3472.color()
     }
 
     /**
@@ -99,20 +121,11 @@ namespace ColorSensor {
     //% blockId=envirobit_set_integration_time
     //% block="Set colour integration time %time ms"
     //% time.min=0 time.max=612 value.defl=500
-    //% subcategory="Expert"
+    //% subcategory="Color"
     export function setColourIntegrationTime(time: number): void {
         return _tcs3472.setIntegrationTime(time)
     }
 
-    /**
-     * Get the amount of blue the colour sensor sees
-     */
-    //% blockId=envirobit_get_light_blue
-    //% block="Get blue"
-    //% subcategory="Colour & Light"
-    export function getBlue(): number {
-        return Math.round(_tcs3472.rgb()[2])
-    }
 }
 
 namespace smbus {
